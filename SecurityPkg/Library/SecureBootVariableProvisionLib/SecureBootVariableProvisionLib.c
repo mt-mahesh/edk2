@@ -388,7 +388,6 @@ EnrollDbFromDefault (
 
   return Status;
 }
-
 /**
   Sets the content of the 'dbx' variable based on 'dbxDefault' variable content.
 

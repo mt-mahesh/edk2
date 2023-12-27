@@ -202,8 +202,7 @@ SecureBootFetchData (
   *SigListOut = EfiSig;
 
   return EFI_SUCCESS;
-}
-
+};
 /**
   Create a time based data payload by concatenating the EFI_VARIABLE_AUTHENTICATION_2
   descriptor with the input data. NO authentication is required in this function.

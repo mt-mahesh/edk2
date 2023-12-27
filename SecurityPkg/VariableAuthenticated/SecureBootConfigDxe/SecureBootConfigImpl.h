@@ -537,6 +537,33 @@ Int2OctStr (
   @retval    Number of characters printed.
 
 **/
+
+/** Function to view the X509 Certificate Common Name **/
+ EFI_STATUS
+GetCommonNameFromX509 (
+  IN     EFI_SIGNATURE_LIST    *ListEntry,
+  IN     EFI_SIGNATURE_DATA    *DataEntry,
+     OUT CHAR16                **BufferToReturn
+  );
+
+/** Function to view the X509 Certificate Organization Name **/
+
+EFI_STATUS GetOrganizationName (
+  IN EFI_SIGNATURE_LIST *ListEntry,
+  IN EFI_SIGNATURE_DATA *DataEntry,
+  OUT CHAR16 **BuffertoReturn
+  );
+
+
+/** Function to view the X509 Certificate Subject Name **/
+BOOLEAN GetSubjectName (
+  IN EFI_SIGNATURE_LIST  *ListEntry,
+  IN EFI_SIGNATURE_DATA  *DataEntry,
+  OUT UINT8              *BuffertoReturn,
+  OUT UINTN              *SizeRet
+  )
+
+
 UINTN
 GuidToString (
   IN  EFI_GUID  *Guid,

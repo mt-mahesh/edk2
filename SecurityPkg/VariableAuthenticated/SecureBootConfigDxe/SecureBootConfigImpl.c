@@ -2392,6 +2392,9 @@ UpdateDeletePage (
   EFI_SIGNATURE_DATA          *Cert;
   UINT32                      ItemDataSize;
   CHAR16                      *GuidStr;
+  CHAR16                      *CNDataString;
+  CHAR16                      *OrgzString;
+  CHAR16                      *SubjString;
   EFI_STRING_ID               GuidID;
   EFI_STRING_ID               Help;
 
@@ -2503,9 +2506,12 @@ UpdateDeletePage (
                                               + CertList->SignatureHeaderSize
                                               + Index * CertList->SignatureSize);
       //
-      // Display GUID and help
+      // Display GUID, CommonName, SubjectName and help
       //
       GuidToString (&Cert->SignatureOwner, GuidStr, 100);
+      GetCommonNameFromX509(CertList, Cert, &CNDataString);
+      GetOrganizationName(CertList, Cert, &OrgzString);
+      GetSubjectName(CertList, Cert, &SubjString, 100);
       GuidID  = HiiSetString (PrivateData->HiiHandle, 0, GuidStr, NULL);
       HiiCreateCheckBoxOpCode (
         StartOpCodeHandle,
@@ -3800,9 +3806,97 @@ GetCommonNameFromX509 (
 
 ON_EXIT:
   SECUREBOOT_FREE_NON_NULL (CNBuffer);
-
+  SECUREBOOT_FREE_NON_NULL (*BufferToReturn);
   return Status;
 }
+
+/** Function to get the Organization Name from the X509 Certificate **/
+
+EFI_STATUS GetOrganizationName (
+  IN EFI_SIGNATURE_LIST *ListEntry,
+  IN EFI_SIGNATURE_DATA *DataEntry,
+  OUT CHAR16 **BuffertoReturn
+  ) 
+  {
+    EFI_STATUS Status;
+    CHAR8 *OrgBuffer;
+    UINTN   OrgBufferSize;
+
+    Status        = EFI_SUCCESS;
+    OrgBuffer     = NULL;
+
+    OrgBuffer     = AllocateZeroPool(256);
+    if(OrgBuffer == NULL) {
+      Status = EFI_OUT_OF_RESOURCES;
+      goto ON_EXIT;
+    }
+
+    OrgBufferSize = 256;
+    X509GetOrganizationName(
+      (UINT8 *)DataEntry + sizeof(EFI_GUID),
+      ListEntry->SignatureSize - sizeof(EFI_GUID),
+      OrgBuffer,
+     &OrgBufferSize
+    );
+
+    *BuffertoReturn = AllocateZeroPool(256 * sizeof(CHAR16));
+    if(*BuffertoReturn == NULL) {
+      Status = EFI_OUT_OF_RESOURCES;
+      goto ON_EXIT;
+    }
+
+    AsciiStrToUnicodeStrS(OrgBuffer, *BuffertoReturn, 256);
+    
+  ON_EXIT:
+    SECUREBOOT_FREE_NON_NULL (OrgBuffer);
+    SECUREBOOT_FREE_NON_NULL (*BuffertoReturn);
+    return Status;
+  }
+
+/**Function to view the X509 Subject Data **/
+
+BOOLEAN GetSubjectName (
+  IN EFI_SIGNATURE_LIST  *ListEntry,
+  IN EFI_SIGNATURE_DATA  *DataEntry,
+  OUT UINT8              *BuffertoReturn,
+  IN  UINTN              *SizeRet
+  )
+  {
+    BOOLEAN IsData;
+    EFI_Status Status;
+
+    IsData      = FALSE;
+
+    if((*DataEntry == NULL) || (*SizeRet == 0)) {
+      return FALSE;
+    }
+    /*  SubjBuffer = AllocateZeroPool (256);
+      if (SubjBuffer == NULL) {
+        return FALSE;
+        goto ON_EXIT;
+      } */
+
+   IsData = X509GetSubjectName(
+      (UINT8 *)DataEntry + sizeof(EFI_GUID),
+      ListEntry->SignatureSize - sizeof(EFI_GUID),
+      &BuffertoReturn,
+      &SizeRet
+    );
+
+ /* BuffertoReturn = AllocateZeroPool (256 * sizeof(UINT8));
+  if(BuffertoReturn == NULL) {
+    Status = EFI_OUT_OF_RESOURCES;
+    goto ON_EXIT;
+  } */
+
+  /*AsciiStrToUnicodeStrS (&SubjBuffer, &BuffertoReturn, 100);*/
+
+ON_EXIT:
+  SECUREBOOT_FREE_NON_NULL(SubjBuffer);
+  SECUREBOOT_FREE_NON_NULL(*BuffertoReturn);
+  return IsData;
+  }
+
 
 /**
   Format the help info for the signature data, each help info contain 3 parts.
