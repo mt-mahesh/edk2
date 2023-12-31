@@ -2393,8 +2393,11 @@ UpdateDeletePage (
   UINT32                      ItemDataSize;
   CHAR16                      *GuidStr;
   CHAR16                      *CNDataString;
-  CHAR16                      *OrgzString;
-  CHAR16                      *SubjString;
+  UINTN                        CnDataSize;
+  EFI_STRING                  FormatCNString;
+  EFI_STRING_ID               CNStrHelp;
+  CHAR16                      CNDataStr[BUFFER_MAX_SIZE];                
+//CHAR16                      *OrgzString;
   EFI_STRING_ID               GuidID;
   EFI_STRING_ID               Help;
 
@@ -2509,17 +2512,21 @@ UpdateDeletePage (
       // Display GUID, CommonName, SubjectName and help
       //
       GuidToString (&Cert->SignatureOwner, GuidStr, 100);
-      GetCommonNameFromX509(CertList, Cert, &CNDataString);
-      GetOrganizationName(CertList, Cert, &OrgzString);
-      GetSubjectName(CertList, Cert, &SubjString, 100);
+      GetCommonNameFromX509(CertList, Cert, CNDataString);
+      CnDataSize = CertList->SignatureSize - sizeof(EFI_GUID);
+      FormatCNString = HiiGetString (PrivateData->HiiHandle, STRING_TOKEN (STR_SIGNATURE_DATA_HELP_FORMAT_CN), NULL);
+      UnicodeSPrint (CNDataStr, 256 * sizeof(CNDataStr), FormatCNString, Help, CnDataSize, CNDataString);
+     //GetOrganizationName(CertList, Cert, &OrgzString);
+      //GetSubjectName(CertList, Cert, &SubjRetBuffer, &SizeRet);
       GuidID  = HiiSetString (PrivateData->HiiHandle, 0, GuidStr, NULL);
+      CNStrHelp = HiiSetString (PrivateData->HiiHandle, 0, CNDataStr, NULL);
       HiiCreateCheckBoxOpCode (
         StartOpCodeHandle,
         (EFI_QUESTION_ID) (QuestionIdBase + GuidIndex++),
         0,
         0,
         GuidID,
-        Help,
+        CNStrHelp,
         EFI_IFR_FLAG_CALLBACK,
         0,
         NULL
@@ -3754,7 +3761,6 @@ ParseHashValue (
 
   return EFI_SUCCESS;
 }
-
 /**
   Function to get the common name from the X509 format certificate.
   The buffer is callee allocated and should be freed by the caller.
@@ -3772,12 +3778,13 @@ EFI_STATUS
 GetCommonNameFromX509 (
   IN     EFI_SIGNATURE_LIST    *ListEntry,
   IN     EFI_SIGNATURE_DATA    *DataEntry,
-     OUT CHAR16                **BufferToReturn
+  OUT    CHAR16                *BufferToReturn
   )
 {
   EFI_STATUS      Status;
   CHAR8           *CNBuffer;
   UINTN           CNBufferSize;
+
 
   Status        = EFI_SUCCESS;
   CNBuffer      = NULL;
@@ -3796,30 +3803,30 @@ GetCommonNameFromX509 (
     &CNBufferSize
   );
 
-  *BufferToReturn = AllocateZeroPool(256 * sizeof(CHAR16));
-  if (*BufferToReturn == NULL) {
+  BufferToReturn = AllocateZeroPool(256 * sizeof(CHAR16));
+  if (BufferToReturn == NULL) {
     Status = EFI_OUT_OF_RESOURCES;
     goto ON_EXIT;
   }
 
-  AsciiStrToUnicodeStrS (CNBuffer, *BufferToReturn, 256);
+  AsciiStrToUnicodeStrS (CNBuffer, BufferToReturn, 256);
 
 ON_EXIT:
   SECUREBOOT_FREE_NON_NULL (CNBuffer);
-  SECUREBOOT_FREE_NON_NULL (*BufferToReturn);
+  SECUREBOOT_FREE_NON_NULL (BufferToReturn);
   return Status;
 }
 
 /** Function to get the Organization Name from the X509 Certificate **/
 
-EFI_STATUS GetOrganizationName (
+/* EFI_STATUS GetOrganizationName (
   IN EFI_SIGNATURE_LIST *ListEntry,
   IN EFI_SIGNATURE_DATA *DataEntry,
   OUT CHAR16 **BuffertoReturn
   ) 
   {
     EFI_STATUS Status;
-    CHAR8 *OrgBuffer;
+    CHAR8    OrgBuffer;
     UINTN   OrgBufferSize;
 
     Status        = EFI_SUCCESS;
@@ -3851,15 +3858,15 @@ EFI_STATUS GetOrganizationName (
     SECUREBOOT_FREE_NON_NULL (OrgBuffer);
     SECUREBOOT_FREE_NON_NULL (*BuffertoReturn);
     return Status;
-  }
+  } */
 
 /**Function to view the X509 Subject Data **/
 
-BOOLEAN GetSubjectName (
+/*BOOLEAN GetSubjectName (
   IN EFI_SIGNATURE_LIST  *ListEntry,
   IN EFI_SIGNATURE_DATA  *DataEntry,
   OUT UINT8              *BuffertoReturn,
-  IN  UINTN              *SizeRet
+  OUT UINTN              *SizeRet
   )
   {
     BOOLEAN IsData;
@@ -3869,19 +3876,19 @@ BOOLEAN GetSubjectName (
 
     if((*DataEntry == NULL) || (*SizeRet == 0)) {
       return FALSE;
-    }
+    }*/
     /*  SubjBuffer = AllocateZeroPool (256);
       if (SubjBuffer == NULL) {
         return FALSE;
         goto ON_EXIT;
       } */
 
-   IsData = X509GetSubjectName(
+   /*IsData = X509_NAME_ONELINE(X509GetSubjectName(
       (UINT8 *)DataEntry + sizeof(EFI_GUID),
       ListEntry->SignatureSize - sizeof(EFI_GUID),
       &BuffertoReturn,
       &SizeRet
-    );
+    ));*/
 
  /* BuffertoReturn = AllocateZeroPool (256 * sizeof(UINT8));
   if(BuffertoReturn == NULL) {
@@ -3891,11 +3898,11 @@ BOOLEAN GetSubjectName (
 
   /*AsciiStrToUnicodeStrS (&SubjBuffer, &BuffertoReturn, 100);*/
 
-ON_EXIT:
+/*ON_EXIT:
   SECUREBOOT_FREE_NON_NULL(SubjBuffer);
-  SECUREBOOT_FREE_NON_NULL(*BuffertoReturn);
-  return IsData;
-  }
+  SECUREBOOT_FREE_NON_NULL(*BuffertoReturn);*/
+  //return IsData;
+  //}
 
 
 /**
@@ -4007,7 +4014,7 @@ FormatHelpInfo (
   // Format content part, it depends on the type of signature list, hash value or CN.
   //
   if (IsCert) {
-    GetCommonNameFromX509 (ListEntry, DataEntry, &DataString);
+    GetCommonNameFromX509 (ListEntry, DataEntry, DataString);
     FormatHelpString = HiiGetString (PrivateData->HiiHandle, STRING_TOKEN (STR_SIGNATURE_DATA_HELP_FORMAT_CN), NULL);
   } else {
     //

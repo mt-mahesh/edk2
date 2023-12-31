@@ -523,7 +523,7 @@ EFIAPI
 Int2OctStr (
   IN     CONST UINTN       *Integer,
   IN     UINTN             IntSizeInWords,
-     OUT UINT8             *OctetString,
+  OUT    UINT8             *OctetString,
   IN     UINTN             OSSizeInBytes
   );
 
@@ -543,7 +543,7 @@ Int2OctStr (
 GetCommonNameFromX509 (
   IN     EFI_SIGNATURE_LIST    *ListEntry,
   IN     EFI_SIGNATURE_DATA    *DataEntry,
-     OUT CHAR16                **BufferToReturn
+  OUT    CHAR16                *BufferToReturn
   );
 
 /** Function to view the X509 Certificate Organization Name **/
@@ -556,12 +556,12 @@ EFI_STATUS GetOrganizationName (
 
 
 /** Function to view the X509 Certificate Subject Name **/
-BOOLEAN GetSubjectName (
+/*BOOLEAN GetSubjectName (
   IN EFI_SIGNATURE_LIST  *ListEntry,
   IN EFI_SIGNATURE_DATA  *DataEntry,
   OUT UINT8              *BuffertoReturn,
   OUT UINTN              *SizeRet
-  )
+  )*/
 
 
 UINTN
